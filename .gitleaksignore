@@ -1,0 +1,3 @@
+542ff97039e06088e30e3306fd6c34a3090e3946:test/linters/trivy/bad/Dockerfile:github-pat:5
+6e11f263e2f2b3dd0e617e5ba7b475dc8dde0a33:.automation/test/gitleaks/gitleaks_bad_01.txt:generic-api-key:2
+0e1a1e50d69c725cec030c34693f26dd7d4f0f2b:.automation/test/gitleaks/gitleaks_bad_01.txt:generic-api-key:1
