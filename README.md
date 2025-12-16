@@ -49,6 +49,14 @@ Here are some notable Super-linter features:
   open-source, fully-containerized linting suite. Other projects borrow ideas
   and design choices from Super-linter (and we're cool with that :).
 
+## How to contribute
+
+If you would like to help contribute to Super-linter, see
+[CONTRIBUTING](https://github.com/super-linter/super-linter/blob/main/.github/CONTRIBUTING.md).
+
+For a guide on how to set up your development environment and contribute to
+Super-linter, see the [development guide](docs/DEVELOPMENT.md).
+
 ## Supported linters and formatters
 
 Super-linter supports the following tools:
@@ -162,7 +170,7 @@ To run super-linter as a GitHub Action, you do the following:
              persist-credentials: false
 
          - name: Super-linter
-           uses: super-linter/super-linter@v8.3.0 # x-release-please-version
+           uses: super-linter/super-linter@v8.3.1 # x-release-please-version
            env:
              # To report GitHub Actions status checks
              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -601,7 +609,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Super-Linter
-        uses: super-linter/super-linter@v8.3.0 # x-release-please-version
+        uses: super-linter/super-linter@v8.3.1 # x-release-please-version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Set your fix mode variables to true
@@ -758,6 +766,7 @@ The following linters and formatters ignore the `FILTER_REGEX_INCLUDE`,
 `FILTER_REGEX_EXCLUDE`, `IGNORE_GENERATED_FILES`, `IGNORE_GITIGNORED_FILES`,
 `VALIDATE_ALL_CODEBASE` variables, and always check the entire workspace:
 
+- ansible-lint
 - Biome
 - Jscpd
 - Checkov
@@ -775,8 +784,7 @@ their own ignoring mechanisms.
 When you trigger a workflow with a step that runs Super-linter on GitHub Actions
 on
 [specific events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows),
-consider the following if you set `VALIDATE_ALL_CODEBASE` to `false` (the
-default):
+consider the following if you set `VALIDATE_ALL_CODEBASE` to `false`:
 
 - `push` events: Super-linter checks only the files that were modified in the
   commits you pushed.
@@ -788,7 +796,7 @@ default):
   set `GITHUB_SHA` to the last commit on the default branch, and `GITHUB_REF` to
   the default branch on `schedule` events). So, Super-linter doesn't have enough
   information to compute the set of files that changed. For `schedule` events,
-  we recommend that you set `VALIDATE_ALL_CODEBASE` to `true`.
+  we recommend that you set `VALIDATE_ALL_CODEBASE` to `true` (the default).
 
 ## Run Super-Linter outside GitHub Actions
 
@@ -902,11 +910,3 @@ Super-linter supports installing dependencies at runtime, on each Super-linter
 run. For more information about installing additional dependencies when running
 Super-linter, see
 [Install additional dependencies](docs/install-additional-dependencies.md).
-
-## How to contribute
-
-If you would like to help contribute to super-linter, see
-[CONTRIBUTING](https://github.com/super-linter/super-linter/blob/main/.github/CONTRIBUTING.md).
-
-For a guide on how to set up your development environment and contribute to
-Super-linter, see the [development guide](docs/DEVELOPMENT.md).
