@@ -120,7 +120,7 @@ Super-linter supports the following tools:
 | **Snakemake**                         | [snakemake --lint](https://snakemake.readthedocs.io/en/stable/snakefiles/writing_snakefiles.html#best-practices)                                                                                                          | [snakefmt](https://github.com/snakemake/snakefmt/)                                                                 |
 | **SQL**                               | [sqlfluff](https://github.com/sqlfluff/sqlfluff)                                                                                                                                                                          |                                                                                                                    |
 | **Svelte**                            | [Biome](https://biomejs.dev/)                                                                                                                                                                                             | [Biome](https://biomejs.dev/)                                                                                      |
-| **Terraform**                         | [tflint](https://github.com/terraform-linters/tflint) , [terrascan](https://github.com/accurics/terrascan), [Checkov](https://www.checkov.io/), [Trivy](https://trivy.dev/)                                               | [terraform fmt](https://developer.hashicorp.com/terraform/cli/commands/fmt)                                        |
+| **Terraform**                         | [tflint](https://github.com/terraform-linters/tflint), [Checkov](https://www.checkov.io/), [Trivy](https://trivy.dev/)                                                                                                    | [terraform fmt](https://developer.hashicorp.com/terraform/cli/commands/fmt)                                        |
 | **Terragrunt**                        | [terragrunt](https://github.com/gruntwork-io/terragrunt)                                                                                                                                                                  | N/A                                                                                                                |
 | **TypeScript**                        | [ESLint](https://eslint.org/), [Biome](https://biomejs.dev/)                                                                                                                                                              | [Prettier](https://prettier.io/), [Biome](https://biomejs.dev/)                                                    |
 | **Vue**                               | [eslint-plugin-vue](https://eslint.vuejs.org/), [Biome](https://biomejs.dev/)                                                                                                                                             | [Prettier](https://prettier.io/), [Biome](https://biomejs.dev/)                                                    |
@@ -170,7 +170,7 @@ To run super-linter as a GitHub Action, you do the following:
              persist-credentials: false
 
          - name: Super-linter
-           uses: super-linter/super-linter@v8.3.1 # x-release-please-version
+           uses: super-linter/super-linter@v8.3.2 # x-release-please-version
            env:
              # To report GitHub Actions status checks
              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -367,11 +367,10 @@ You can configure Super-linter using the following environment variables:
 | **SUPER_LINTER_SUMMARY_FILE_NAME**                     | `super-linter-summary.md`                                                    | Name of the file where to save the summary output. For more information, see [Summary outputs](#summary-outputs).                                                                                                                                                                                                                                                           |
 | **SUPPRESS_FILE_TYPE_WARN**                            | `false`                                                                      | If set to `true`, will hide warning messages about files without their proper extensions. Default is `false`                                                                                                                                                                                                                                                                |
 | **SUPPRESS_POSSUM**                                    | `false`                                                                      | If set to `true`, will hide the ASCII possum at top of log output. Default is `false`                                                                                                                                                                                                                                                                                       |
-| **TERRAFORM_TERRASCAN_CONFIG_FILE**                    | `terrascan.toml`                                                             | Filename for [terrascan configuration](https://github.com/accurics/terrascan) (ex: `terrascan.toml`)                                                                                                                                                                                                                                                                        |
 | **TERRAFORM_TFLINT_CONFIG_FILE**                       | `.tflint.hcl`                                                                | Filename for [tfLint configuration](https://github.com/terraform-linters/tflint) (ex: `.tflint.hcl`)                                                                                                                                                                                                                                                                        |
 | **TRIVY_CONFIG_FILE**                                  | `trivy.yaml`                                                                 | Filename for [Trivy](https://trivy.dev/latest/docs/references/configuration/config-file/)                                                                                                                                                                                                                                                                                   |
 | **TYPESCRIPT_ES_CONFIG_FILE**                          | `eslint.config.mjs`                                                          | Filename for [ESLint configuration](https://eslint.org/docs/user-guide/configuring#configuration-file-formats)                                                                                                                                                                                                                                                              |
-| **USE_FIND_ALGORITHM**                                 | `false`                                                                      | By default, we use `git diff` to find all files in the workspace and what has been updated, this would enable the Linux `find` method instead to find all files to lint                                                                                                                                                                                                     |
+| **USE_FIND_ALGORITHM**                                 | `false`                                                                      | Set this to `true` to make Super-linter scan the filesystem to get the list of files to check instead of relying on Git.                                                                                                                                                                                                                                                    |
 | **VALIDATE_ALL_CODEBASE**                              | `true`                                                                       | Set this to `true` to lint and format the entire workspace. Set this to`false` to lint and format **new** or **changed** files only. For more information, see [VALIDATE_ALL_CODEBASE](#validate_all_codebase).                                                                                                                                                             |
 | **VALIDATE_ANSIBLE**                                   | `true`                                                                       | Flag to enable or disable the linting process of the Ansible language.                                                                                                                                                                                                                                                                                                      |
 | **VALIDATE_ARM**                                       | `true`                                                                       | Flag to enable or disable the linting process of the ARM language.                                                                                                                                                                                                                                                                                                          |
@@ -464,7 +463,6 @@ You can configure Super-linter using the following environment variables:
 | **VALIDATE_STATES**                                    | `true`                                                                       | Flag to enable or disable the linting process for AWS States Language.                                                                                                                                                                                                                                                                                                      |
 | **VALIDATE_SQLFLUFF**                                  | `true`                                                                       | Flag to enable or disable the linting process of the SQL language. (Utilizing: sqlfuff)                                                                                                                                                                                                                                                                                     |
 | **VALIDATE_TERRAFORM_FMT**                             | `true`                                                                       | Flag to enable or disable checking the formatting process of the Terraform files.                                                                                                                                                                                                                                                                                           |
-| **VALIDATE_TERRAFORM_TERRASCAN**                       | `true`                                                                       | Flag to enable or disable the linting process of the Terraform language for security related issues.                                                                                                                                                                                                                                                                        |
 | **VALIDATE_TERRAFORM_TFLINT**                          | `true`                                                                       | Flag to enable or disable the linting process of the Terraform language. (Utilizing tflint)                                                                                                                                                                                                                                                                                 |
 | **VALIDATE_TERRAGRUNT**                                | `true`                                                                       | Flag to enable or disable the linting process for Terragrunt files.                                                                                                                                                                                                                                                                                                         |
 | **VALIDATE_TRIVY**                                     | `true`                                                                       | Flag to enable or disable running Trivy.                                                                                                                                                                                                                                                                                                                                    |
@@ -503,7 +501,7 @@ workspace, set `VALIDATE_ALL_CODEBASE` to `true` (the default).
 The following linters and formatters ignore the `VALIDATE_ALL_CODEBASE`
 variable, and always check the entire workspace:
 
-- Biome, because it supports its own mechanim to check changed files only. For
+- Biome, because it supports its own mechanism to check changed files only. For
   more information, about configuring Biome to only check changed files, see
   [Biome VCS integration doc](https://biomejs.dev/guides/integrate-in-vcs/#process-only-changed-files).
 - Trivy, because while some Trivy scanners can work on changed files only,
@@ -609,7 +607,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Super-Linter
-        uses: super-linter/super-linter@v8.3.1 # x-release-please-version
+        uses: super-linter/super-linter@v8.3.2 # x-release-please-version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Set your fix mode variables to true
@@ -787,16 +785,30 @@ on
 consider the following if you set `VALIDATE_ALL_CODEBASE` to `false`:
 
 - `push` events: Super-linter checks only the files that were modified in the
-  commits you pushed.
-- `pull_request`, `pull_request_target`, and `workflow_dispatch` events:
-  Super-linter checks all the files that you modified compared to the repository
-  default branch.
-- `schedule` events: Super-linter will not find any files to check because
-  `schedule` events run against the repository default branch (GitHub Actions
-  set `GITHUB_SHA` to the last commit on the default branch, and `GITHUB_REF` to
-  the default branch on `schedule` events). So, Super-linter doesn't have enough
-  information to compute the set of files that changed. For `schedule` events,
-  we recommend that you set `VALIDATE_ALL_CODEBASE` to `true` (the default).
+  commits you pushed in the push event. Examples:
+  - If you push `commit-1` and `commit-2` to `branch-a`, Super-linter will lint
+    the files you modified in `commit-1` and `commit-2`. Then, if you push
+    `commit-3` to `branch-a`, Super-linter will check only the files you
+    modified in `commit-3`.
+  - If you push a merge commit that merges the default branch (example: `main`)
+    in a non-default branch, Super-linter will check only the files that you
+    modified in the merge commit. This might be surprising for some users,
+    because, in this case, Super-linter will check only files that you modified
+    in the default branch in the merge commit.
+- `merge_group`, `pull_request` events: Super-linter checks all the files that
+  you modified compared to the repository default branch.
+- `workflow_dispatch` events: Super-linter checks all the files that you
+  modified compared to the repository default branch. If you send a
+  `workflow_dispatch` event to the default branch of your repository, or to a
+  tag that points at the `HEAD` of your default branch, Super-linter will not
+  find any file to lint unless `VALIDATE_ALL_CODEBASE` is set to `true`.
+- `pull_request_target`, `repository_dispatch`, `schedule` events: Super-linter
+  will not find any files to check unless `VALIDATE_ALL_CODEBASE` is set to
+  `true` because these events run against the repository default branch.
+
+By setting `FAIL_ON_INVALID_GITHUB_ACTIONS_EVENT_CONFIGURATION` to `true`,
+Super-linter exits with an error if the configuration is not suitable for the
+GitHub event that triggered the issue.
 
 ## Run Super-Linter outside GitHub Actions
 

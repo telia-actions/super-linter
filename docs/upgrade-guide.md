@@ -2,6 +2,7 @@
 
 This document helps you upgrade from a super-linter version to newer ones:
 
+- [Upgrade from >=v8.2.0 to v8.4.0](#upgrade-from-v820-to-v840)
 - [Upgrade from v8.1.0 to v8.2.0](#upgrade-from-v810-to-v820)
 - [Upgrade from v7.4.0 to v8.0.0](#upgrade-from-v740-to-v8)
 - [Upgrade from v7.3.0 to v7.4.0](#upgrade-from-v730-to-v740)
@@ -9,12 +10,49 @@ This document helps you upgrade from a super-linter version to newer ones:
 - [Upgrade from v6.7.0 to v6.8.0](#upgrade-from-v670-to-v680)
 - [Upgrade from v5 to v6](#upgrade-from-v5-to-v6)
 
+## Upgrade from >=v8.2.0 to v8.4.0
+
+This section helps you upgrade from super-linter `>=v8.2.0` to `v8.4.0`.
+
+### Terrascan
+
+Super-linter `v8.4.0` removes support for Terrascan because it's not being
+maintained anymore.
+
+You can remove the following variables from your Super-linter configuration:
+
+- `TERRAFORM_TERRASCAN_CONFIG_FILE`
+- `VALIDATE_TERRAFORM_TERRASCAN`
+
 ## Upgrade from v8.1.0 to v8.2.0
+
+This section helps you upgrade from super-linter `v8.1.0` to `v8.2.0`.
+
+### Kubeconform
 
 Super-linter `v8.2.0` adds back Kubeconform and related configuration variables:
 
 - `KUBERNETES_KUBECONFORM_OPTIONS`
 - `VALIDATE_KUBERNETES_KUBECONFORM`
+
+### Potentially conflicting linters and formatters
+
+Super-linter `v8.2.0` adds support for running:
+
+- Ruff as a formatter on Python files. This might conflict with Black
+  (Languages: `PYTHON_BLACK`).
+- Biome as a linter. This might conflict with stylelint (`CSS`), ESLint
+  (Languages: `JAVASCRIPT_ES`, `JSON`, `JSONC`, `JSX`, `TSX`, `TYPESCRIPT_ES`,
+  `VUE`)
+- Biome as a formatter. This might conflict with Prettier (Languages:
+  `CSS_PRETTIER`, `GRAPHQL_PRETTIER`, `HTML_PRETTIER`, `JAVASCRIPT_PRETTIER`,
+  `JSON_PRETTIER`, `JSONC_PRETTIER`, `JSX_PRETTIER`, `TYPESCRIPT_PRETTIER`,
+  `VUE_PRETTIER`).
+
+If you have potentially conflicting linters or formatters enabled, Super-linter
+will emit a warning message. To turn the conflicting tools warning into a
+failure that makes Super-linter exit with an error, set the
+`FAIL_ON_CONFLICTING_TOOLS_ENABLED` configuration variable to `true`.
 
 ## Upgrade from v7.4.0 to v8
 
