@@ -7,6 +7,85 @@ set -o pipefail
 # shellcheck source=/dev/null
 source "test/testUtils.sh"
 
+GenerateFileDiffNoGitHubBeforeShaTest() {
+  local FUNCTION_NAME
+  FUNCTION_NAME="${1:-${FUNCNAME[0]}}"
+  info "${FUNCTION_NAME} start"
+
+  # shellcheck source=/dev/null
+  source "lib/functions/buildFileList.sh"
+
+  if GenerateFileDiff; then
+    fatal "GenerateFileDiff with an undefined GITHUB_BEFORE_SHA should have failed"
+  fi
+
+  notice "${FUNCTION_NAME} PASS"
+}
+GenerateFileDiffNoGitHubBeforeShaTest
+
+GenerateFileDiffMergeDefaultBranchInPullRequestBranchTest() {
+  local FUNCTION_NAME
+  FUNCTION_NAME="${1:-${FUNCNAME[0]}}"
+  info "${FUNCTION_NAME} start"
+
+  debug "Simulate the push of a merge commit to a non-default branch. The merge commit merges the default branch in the non-default branch"
+
+  local GITHUB_WORKSPACE
+  GITHUB_WORKSPACE="$(mktemp -d)"
+  initialize_git_repository "${GITHUB_WORKSPACE}"
+
+  debug "Create the first commit in ${DEFAULT_BRANCH}"
+  local INIT_COMMIT_FILE_NAME="init-commit.txt"
+  touch "${GITHUB_WORKSPACE}/${INIT_COMMIT_FILE_NAME}"
+  git -C "${GITHUB_WORKSPACE}" add .
+  git -C "${GITHUB_WORKSPACE}" commit -m "${INIT_COMMIT_FILE_NAME}"
+  GIT_ROOT_COMMIT_SHA="$(git -C "${GITHUB_WORKSPACE}" rev-parse HEAD)"
+  debug "GIT_ROOT_COMMIT_SHA: ${GIT_ROOT_COMMIT_SHA}"
+
+  debug "Switch to ${NEW_BRANCH_NAME} branch"
+  git -C "${GITHUB_WORKSPACE}" switch --create "${NEW_BRANCH_NAME}"
+  local FEATURE_BRANCH_FILE_NAME="feature-branch.txt"
+  touch "${GITHUB_WORKSPACE}/${FEATURE_BRANCH_FILE_NAME}"
+  git -C "${GITHUB_WORKSPACE}" add .
+  git -C "${GITHUB_WORKSPACE}" commit -m "${FEATURE_BRANCH_FILE_NAME}"
+  GITHUB_BEFORE_SHA="$(git -C "${GITHUB_WORKSPACE}" rev-parse HEAD)"
+  debug "Setting GITHUB_BEFORE_SHA to ${GITHUB_BEFORE_SHA}"
+
+  debug "Switch to ${DEFAULT_BRANCH} branch"
+  git -C "${GITHUB_WORKSPACE}" switch "${DEFAULT_BRANCH}"
+  local MAIN_BRANCH_NEW_FILE_NAME="main-new-file.txt"
+  touch "${GITHUB_WORKSPACE}/${MAIN_BRANCH_NEW_FILE_NAME}"
+  git -C "${GITHUB_WORKSPACE}" add .
+  git -C "${GITHUB_WORKSPACE}" commit -m "${MAIN_BRANCH_NEW_FILE_NAME}"
+
+  debug "Switch to ${NEW_BRANCH_NAME} branch"
+  git -C "${GITHUB_WORKSPACE}" switch "${NEW_BRANCH_NAME}"
+  git -C "${GITHUB_WORKSPACE}" merge "${DEFAULT_BRANCH}"
+
+  git_log_graph "${GITHUB_WORKSPACE}"
+
+  initialize_github_sha "${GITHUB_WORKSPACE}"
+
+  # shellcheck source=/dev/null
+  source "lib/functions/buildFileList.sh"
+
+  GenerateFileDiff
+
+  debug "RAW_FILE_ARRAY contents: ${RAW_FILE_ARRAY[*]}"
+
+  # shellcheck disable=SC2034
+  local EXPECTED_RAW_FILE_ARRAY=(
+    "${GITHUB_WORKSPACE}/${MAIN_BRANCH_NEW_FILE_NAME}"
+  )
+
+  if ! AssertArraysElementsContentMatch "RAW_FILE_ARRAY" "EXPECTED_RAW_FILE_ARRAY"; then
+    fatal "${FUNCTION_NAME} test failed"
+  fi
+
+  notice "${FUNCTION_NAME} PASS"
+}
+GenerateFileDiffMergeDefaultBranchInPullRequestBranchTest
+
 GenerateFileDiffTest() {
   local FUNCTION_NAME
   FUNCTION_NAME="${1:-${FUNCNAME[0]}}"
@@ -28,20 +107,21 @@ GenerateFileDiffTest() {
     TEST_FORCE_CREATE_MERGE_COMMIT="false"
   fi
 
-  initialize_git_repository_contents "${GITHUB_WORKSPACE}" "${COMMITS_TO_CREATE}" "true" "${GITHUB_EVENT_NAME}" "${TEST_FORCE_CREATE_MERGE_COMMIT}" "${SKIP_GITHUB_BEFORE_SHA_INIT}" "${COMMIT_BAD_FILE_ON_DEFAULT_BRANCH_AND_MERGE}" "true"
+  initialize_git_repository_contents "${GITHUB_WORKSPACE}" "${COMMITS_TO_CREATE}" "true" "${GITHUB_EVENT_NAME}" "${TEST_FORCE_CREATE_MERGE_COMMIT}" "${SKIP_GITHUB_BEFORE_SHA_INIT}" "${COMMIT_BAD_FILE_ON_DEFAULT_BRANCH_AND_MERGE}" "true" "false"
 
   # shellcheck source=/dev/null
   source "lib/functions/buildFileList.sh"
 
   GenerateFileDiff
 
-  RAW_FILE_ARRAY_SIZE=${#RAW_FILE_ARRAY[@]}
-
   debug "RAW_FILE_ARRAY contents:\n${RAW_FILE_ARRAY[*]}"
 
   # Subtract 1 to account for the initial commit
   local -i EXPECTED_RAW_FILE_ARRAY_SIZE
   local -i EXPECTED_RAW_FILE_ARRAY_SCAN_INDEX_START
+  local -a EXPECTED_RAW_FILE_ARRAY
+  EXPECTED_RAW_FILE_ARRAY=()
+
   if [[ "${COMMITS_TO_CREATE}" -eq 0 ]]; then
     debug "This test considers the initial commit only"
     EXPECTED_RAW_FILE_ARRAY_SIZE=1
@@ -51,21 +131,21 @@ GenerateFileDiffTest() {
     EXPECTED_RAW_FILE_ARRAY_SCAN_INDEX_START=1
   fi
 
-  if [ "${RAW_FILE_ARRAY_SIZE}" -ne "${EXPECTED_RAW_FILE_ARRAY_SIZE}" ]; then
-    fatal "RAW_FILE_ARRAY_SIZE does not have exactly ${EXPECTED_RAW_FILE_ARRAY_SIZE} elements, but rather: ${RAW_FILE_ARRAY_SIZE}"
-  else
-    debug "RAW_FILE_ARRAY_SIZE (${RAW_FILE_ARRAY_SIZE}) matches the expected value"
+  for ((i = 0; i < EXPECTED_RAW_FILE_ARRAY_SIZE; i++)); do
+    EXPECTED_RAW_FILE_ARRAY+=("${GITHUB_WORKSPACE}/test$((i + EXPECTED_RAW_FILE_ARRAY_SCAN_INDEX_START)).json")
+  done
+
+  if [[ "${COMMIT_BAD_FILE_ON_DEFAULT_BRANCH_AND_MERGE}" == "true" ]]; then
+    EXPECTED_RAW_FILE_ARRAY_SIZE=$((EXPECTED_RAW_FILE_ARRAY_SIZE + 1))
+    EXPECTED_RAW_FILE_ARRAY=(
+      "${GITHUB_WORKSPACE}/test-bad0.json"
+      "${EXPECTED_RAW_FILE_ARRAY[@]}"
+    )
   fi
 
-  local EXPECTED_FILE_PATH
-  for ((i = 0; i < RAW_FILE_ARRAY_SIZE; i++)); do
-    EXPECTED_FILE_PATH="${GITHUB_WORKSPACE}/test$((i + EXPECTED_RAW_FILE_ARRAY_SCAN_INDEX_START)).json"
-    if [[ "${RAW_FILE_ARRAY[${i}]}" != "${EXPECTED_FILE_PATH}" ]]; then
-      fatal "${RAW_FILE_ARRAY[${i}]} does not match the expected value: ${EXPECTED_FILE_PATH}"
-    else
-      debug "${RAW_FILE_ARRAY[${i}]} matches the expected value"
-    fi
-  done
+  if ! AssertArraysElementsContentMatch "RAW_FILE_ARRAY" "EXPECTED_RAW_FILE_ARRAY"; then
+    fatal "${FUNCTION_NAME} test failed"
+  fi
 
   notice "${FUNCTION_NAME} PASS"
 }
@@ -84,11 +164,6 @@ GenerateFileDiffInitialCommitPushEventTest() {
   GenerateFileDiffTest "${FUNCNAME[0]}" 0 "push" "false" "false"
 }
 GenerateFileDiffInitialCommitPushEventTest
-
-GenerateFileDiffPushEventNoGitHubBeforeShaTest() {
-  GenerateFileDiffTest "${FUNCNAME[0]}" 2 "push" "true" "false"
-}
-GenerateFileDiffPushEventNoGitHubBeforeShaTest
 
 GenerateFileDiffOneFilePullRequestEventTest() {
   GenerateFileDiffTest "${FUNCNAME[0]}" 1 "pull_request" "false" "false"
@@ -292,3 +367,145 @@ BuildFileListValidateAllCodeBaseTest() {
   notice "${FUNCTION_NAME} PASS"
 }
 BuildFileListValidateAllCodeBaseTest
+
+CheckFileTypeTest() {
+  local FUNCTION_NAME
+  FUNCTION_NAME="${FUNCNAME[0]}"
+  info "${FUNCTION_NAME} start"
+
+  local GITHUB_WORKSPACE
+  GITHUB_WORKSPACE="$(mktemp -d)"
+  initialize_temp_directory_cleanup_traps "${GITHUB_WORKSPACE}"
+
+  FILE_ARRAYS_DIRECTORY_PATH="$(mktemp -d)"
+  export FILE_ARRAYS_DIRECTORY_PATH
+  initialize_temp_directory_cleanup_traps "${FILE_ARRAYS_DIRECTORY_PATH}"
+
+  # shellcheck disable=SC2034
+  local SUPPRESS_FILE_TYPE_WARN="true"
+
+  # Create test files
+  local PYTHON_SCRIPT_PATH="${GITHUB_WORKSPACE}/python-script"
+  echo "#!/usr/bin/env python3" >"${PYTHON_SCRIPT_PATH}"
+  chmod +x "${PYTHON_SCRIPT_PATH}"
+
+  local PERL_SCRIPT_PATH="${GITHUB_WORKSPACE}/perl-script"
+  echo "#!/usr/bin/env perl" >"${PERL_SCRIPT_PATH}"
+  chmod +x "${PERL_SCRIPT_PATH}"
+
+  local RUBY_SCRIPT_PATH="${GITHUB_WORKSPACE}/ruby-script"
+  echo "#!/usr/bin/env ruby" >"${RUBY_SCRIPT_PATH}"
+  chmod +x "${RUBY_SCRIPT_PATH}"
+
+  local POSIX_SHELL_SCRIPT_PATH="${GITHUB_WORKSPACE}/posix-shell-script"
+  echo "#!/bin/sh" >"${POSIX_SHELL_SCRIPT_PATH}"
+  chmod +x "${POSIX_SHELL_SCRIPT_PATH}"
+
+  local BASH_SHELL_SCRIPT_PATH="${GITHUB_WORKSPACE}/bash-shell-script"
+  echo "#!/bin/bash" >"${BASH_SHELL_SCRIPT_PATH}"
+  chmod +x "${BASH_SHELL_SCRIPT_PATH}"
+
+  local DASH_SHELL_SCRIPT_PATH="${GITHUB_WORKSPACE}/dash-shell-script"
+  echo "#!/bin/dash" >"${DASH_SHELL_SCRIPT_PATH}"
+  chmod +x "${DASH_SHELL_SCRIPT_PATH}"
+
+  local KSH_SHELL_SCRIPT_PATH="${GITHUB_WORKSPACE}/ksh-shell-script"
+  echo "#!/bin/ksh" >"${KSH_SHELL_SCRIPT_PATH}"
+  chmod +x "${KSH_SHELL_SCRIPT_PATH}"
+
+  local ENV_SH_SCRIPT_PATH="${GITHUB_WORKSPACE}/env-sh-script"
+  echo "#!/usr/bin/env sh" >"${ENV_SH_SCRIPT_PATH}"
+  chmod +x "${ENV_SH_SCRIPT_PATH}"
+
+  local ENV_BASH_SCRIPT_PATH="${GITHUB_WORKSPACE}/env-bash-script"
+  echo "#!/usr/bin/env bash" >"${ENV_BASH_SCRIPT_PATH}"
+  chmod +x "${ENV_BASH_SCRIPT_PATH}"
+
+  local ENV_DASH_SCRIPT_PATH="${GITHUB_WORKSPACE}/env-dash-script"
+  echo "#!/usr/bin/env dash" >"${ENV_DASH_SCRIPT_PATH}"
+  chmod +x "${ENV_DASH_SCRIPT_PATH}"
+
+  local ENV_KSH_SCRIPT_PATH="${GITHUB_WORKSPACE}/env-ksh-script"
+  echo "#!/usr/bin/env ksh" >"${ENV_KSH_SCRIPT_PATH}"
+  chmod +x "${ENV_KSH_SCRIPT_PATH}"
+
+  local UNKNOWN_FILE_PATH="${GITHUB_WORKSPACE}/unknown-file"
+  echo "some text" >"${UNKNOWN_FILE_PATH}"
+
+  local -a ALL_SCRIPTS=(
+    "${PYTHON_SCRIPT_PATH}"
+    "${PERL_SCRIPT_PATH}"
+    "${RUBY_SCRIPT_PATH}"
+    "${POSIX_SHELL_SCRIPT_PATH}"
+    "${BASH_SHELL_SCRIPT_PATH}"
+    "${DASH_SHELL_SCRIPT_PATH}"
+    "${KSH_SHELL_SCRIPT_PATH}"
+    "${ENV_SH_SCRIPT_PATH}"
+    "${ENV_BASH_SCRIPT_PATH}"
+    "${ENV_DASH_SCRIPT_PATH}"
+    "${ENV_KSH_SCRIPT_PATH}"
+  )
+
+  # Run CheckFileType on created files
+  for script_path in "${ALL_SCRIPTS[@]}"; do
+    if ! CheckFileType "${script_path}"; then
+      fatal "CheckFileType with ${script_path} should have passed"
+    fi
+  done
+
+  if CheckFileType "${UNKNOWN_FILE_PATH}"; then
+    fatal "CheckFileType with ${UNKNOWN_FILE_PATH} should have failed"
+  fi
+
+  # Assertions for Python script
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-PYTHON_BLACK" "${PYTHON_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-PYTHON_FLAKE8" "${PYTHON_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-PYTHON_ISORT" "${PYTHON_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-PYTHON_PYLINT" "${PYTHON_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-PYTHON_MYPY" "${PYTHON_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-PYTHON_RUFF" "${PYTHON_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-PYTHON_RUFF_FORMAT" "${PYTHON_SCRIPT_PATH}"
+
+  # Assertions for Perl script
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-PERL" "${PERL_SCRIPT_PATH}"
+
+  # Assertions for Ruby script
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-RUBY" "${RUBY_SCRIPT_PATH}"
+
+  # Assertions for all Shell scripts (direct and env variants)
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${POSIX_SHELL_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${POSIX_SHELL_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${POSIX_SHELL_SCRIPT_PATH}"
+
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${BASH_SHELL_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${BASH_SHELL_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${BASH_SHELL_SCRIPT_PATH}"
+
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${DASH_SHELL_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${DASH_SHELL_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${DASH_SHELL_SCRIPT_PATH}"
+
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${KSH_SHELL_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${KSH_SHELL_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${KSH_SHELL_SCRIPT_PATH}"
+
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${ENV_SH_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${ENV_SH_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${ENV_SH_SCRIPT_PATH}"
+
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${ENV_BASH_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${ENV_BASH_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${ENV_BASH_SCRIPT_PATH}"
+
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${ENV_DASH_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${ENV_DASH_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${ENV_DASH_SCRIPT_PATH}"
+
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${ENV_KSH_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${ENV_KSH_SCRIPT_PATH}"
+  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${ENV_KSH_SCRIPT_PATH}"
+
+  unset SUPPRESS_FILE_TYPE_WARN
+  notice "${FUNCTION_NAME} PASS"
+}
+CheckFileTypeTest
