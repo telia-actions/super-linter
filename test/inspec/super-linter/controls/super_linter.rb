@@ -10,6 +10,10 @@ control "super-linter-environment-variables" do
   title "Super-Linter environment variables check"
   desc "Check that environment variables that Super-Linter needs are defined."
 
+  describe os_env("ARM_TTK_PSD1") do
+    its("content") { should eq "/usr/lib/microsoft/arm-ttk/arm-ttk.psd1" }
+  end
+
   describe os_env("VERSION_FILE") do
     its("content") { should eq version_file_path }
   end
@@ -157,6 +161,7 @@ control "super-linter-installed-commands" do
     { linter_name: "clang-format" },
     { linter_name: "clippy", linter_command: "cargo clippy" },
     { linter_name: "clj-kondo" },
+    { linter_name: "codespell" },
     { linter_name: "coffeelint" },
     { linter_name: "commitlint" },
     { linter_name: "composer" },
@@ -366,7 +371,6 @@ control "super-linter-installed-npm-packages" do
     "renovate",
     "stylelint",
     "stylelint-config-recommended-scss",
-    "stylelint-config-sass-guidelines",
     "stylelint-config-standard",
     "stylelint-config-standard-scss",
     "stylelint-prettier",
@@ -398,6 +402,7 @@ control "super-linter-installed-pypi-packages" do
     "black",
     "cfn-lint",
     "checkov",
+    "codespell",
     "cpplint",
     "flake8",
     "isort",
@@ -485,6 +490,7 @@ control "super-linter-validate-files" do
     "/action/lib/globals/languages.sh",
     "/action/lib/globals/linterCommandsOptions.sh",
     "/action/lib/globals/linterRules.sh",
+    "/action/lib/globals/output.sh",
     "/action/lib/globals/runtimeDependencies.sh",
     "/action/lib/globals/validation.sh",
     "/action/lib/.automation/actionlint.yml",
@@ -496,6 +502,7 @@ control "super-linter-validate-files" do
     "/action/lib/.automation/.clang-format",
     "/action/lib/.automation/.clj-kondo",
     "/action/lib/.automation/.coffee-lint.json",
+    "/action/lib/.automation/.codespellrc",
     "/action/lib/.automation/.editorconfig-checker.json",
     "/action/lib/.automation/.flake8",
     "/action/lib/.automation/.golangci.yml",
