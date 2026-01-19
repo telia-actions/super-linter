@@ -10,10 +10,10 @@
 FROM alpine/terragrunt:1.14.1 AS terragrunt
 FROM dotenvlinter/dotenv-linter:4.0.0 AS dotenv-linter
 FROM ghcr.io/terraform-linters/tflint:v0.60.0 AS tflint
-FROM alpine/helm:4.0.4 AS helm
+FROM alpine/helm:4.0.5 AS helm
 FROM golang:1.25.5-alpine AS golang
-FROM golangci/golangci-lint:v2.7.2 AS golangci-lint
-FROM goreleaser/goreleaser:v2.13.2 AS goreleaser
+FROM golangci/golangci-lint:v2.8.0 AS golangci-lint
+FROM goreleaser/goreleaser:v2.13.3 AS goreleaser
 FROM hadolint/hadolint:v2.14.0-alpine AS dockerfile-lint
 FROM registry.k8s.io/kustomize/kustomize:v5.8.0 AS kustomize
 FROM hashicorp/terraform:1.14.3 AS terraform
@@ -24,9 +24,9 @@ FROM rhysd/actionlint:1.7.10 AS actionlint
 FROM scalameta/scalafmt:v3.10.2 AS scalafmt
 FROM zricethezav/gitleaks:v8.30.0 AS gitleaks
 FROM yoheimuta/protolint:0.56.4 AS protolint
-FROM ghcr.io/clj-kondo/clj-kondo:2025.12.23-alpine AS clj-kondo
+FROM ghcr.io/clj-kondo/clj-kondo:2026.01.12-alpine AS clj-kondo
 FROM dart:3.10.7-sdk AS dart
-FROM mcr.microsoft.com/dotnet/sdk:10.0.101-alpine3.23 AS dotnet-sdk
+FROM mcr.microsoft.com/dotnet/sdk:10.0.102-alpine3.23 AS dotnet-sdk
 FROM composer/composer:2.9.3 AS php-composer
 FROM ghcr.io/aquasecurity/trivy:0.68.2 AS trivy
 FROM ghcr.io/yannh/kubeconform:v0.7.0 AS kubeconform
@@ -444,6 +444,7 @@ ENV PATH="${PATH}:/venvs/ansible-lint/bin"
 ENV PATH="${PATH}:/venvs/black/bin"
 ENV PATH="${PATH}:/venvs/cfn-lint/bin"
 ENV PATH="${PATH}:/venvs/checkov/bin"
+ENV PATH="${PATH}:/venvs/codespell/bin"
 ENV PATH="${PATH}:/venvs/cpplint/bin"
 ENV PATH="${PATH}:/venvs/flake8/bin"
 ENV PATH="${PATH}:/venvs/isort/bin"
@@ -473,6 +474,11 @@ ENV RENOVATE_X_IGNORE_RE2="true"
 # File to store linter versions
 ENV VERSION_FILE="/action/linterVersions.txt"
 RUN mkdir /action
+
+# Define this for all image variants to avoid that commands that depend on this
+# variable don't find it, and throw "unbound variable" errors when the Bash
+# nounset option is enabled.
+ENV ARM_TTK_PSD1="/usr/lib/microsoft/arm-ttk/arm-ttk.psd1"
 
 # create the homedir, so that in case it is not present (like on action-runner-controller based selfhosted runners)
 # we do not fail at setting /github/workspace as a safe git directory
@@ -549,7 +555,6 @@ FROM base_image AS standard
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 ARG TARGETARCH
 
-ENV ARM_TTK_PSD1="/usr/lib/microsoft/arm-ttk/arm-ttk.psd1"
 ENV PATH="${PATH}:/var/cache/dotnet/tools:/usr/share/dotnet"
 
 # Install Rust linters

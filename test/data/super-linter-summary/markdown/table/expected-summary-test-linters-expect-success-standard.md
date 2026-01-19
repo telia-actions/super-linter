@@ -92,6 +92,7 @@
 | SHELL_SHFMT                  | Pass ✅           |
 | SNAKEMAKE_LINT               | Pass ✅           |
 | SNAKEMAKE_SNAKEFMT           | Pass ✅           |
+| SPELL_CODESPELL              | Pass ✅           |
 | STATES                       | Pass ✅           |
 | SQLFLUFF                     | Pass ✅           |
 | TERRAFORM_FMT                | Pass ✅           |
@@ -111,3 +112,9 @@
 <!-- textlint-enable terminology -->
 
 All files and directories linted successfully
+
+For more information, see the Super-linter summary
+(super-linter-output/super-linter-summary.md) and the Super-linter log
+(super-linter.log)
+
+Powered by [Super-linter](https://github.com/super-linter/super-linter)
