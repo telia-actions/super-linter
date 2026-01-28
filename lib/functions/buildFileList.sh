@@ -182,8 +182,17 @@ function BuildFileList() {
   RAW_FILE_ARRAY+=("${GITHUB_WORKSPACE}")
 
   if [ -d "${ANSIBLE_DIRECTORY}" ]; then
-    debug "Adding ANSIBLE_DIRECTORY (${ANSIBLE_DIRECTORY}) to the list of files and directories to lint."
-    RAW_FILE_ARRAY+=("${ANSIBLE_DIRECTORY}")
+    local ANSIBLE_DIRECTORY_REAL_PATH
+    if ! ANSIBLE_DIRECTORY_REAL_PATH="$(readlink -f "${ANSIBLE_DIRECTORY}" 2>&1)"; then
+      fatal "Error while initializing ANSIBLE_DIRECTORY_REAL_PATH: ${ANSIBLE_DIRECTORY_REAL_PATH}"
+    fi
+    debug "ANSIBLE_DIRECTORY_REAL_PATH: ${ANSIBLE_DIRECTORY_REAL_PATH}"
+    if [[ "${ANSIBLE_DIRECTORY_REAL_PATH}" != "${GITHUB_WORKSPACE}" ]]; then
+      debug "Adding ANSIBLE_DIRECTORY (${ANSIBLE_DIRECTORY}) to the list of files and directories to lint."
+      RAW_FILE_ARRAY+=("${ANSIBLE_DIRECTORY}")
+    else
+      debug "Skip adding ANSIBLE_DIRECTORY to the list of files and directories to lint because it matches GITHUB_WORKSPACE (${GITHUB_WORKSPACE}), and it was already added to the list."
+    fi
   else
     debug "ANSIBLE_DIRECTORY (${ANSIBLE_DIRECTORY}) does NOT exist."
   fi
@@ -197,11 +206,16 @@ function BuildFileList() {
 
   if [ "${LOG_DEBUG}" == "true" ]; then
     debug "LOG_DEBUG is enabled. Enable verbose output for parallel"
-    PARALLEL_COMMAND+=(--verbose)
+    PARALLEL_COMMAND+=(-v)
   fi
 
   # Max number of files to categorize per process
   PARALLEL_COMMAND+=(--max-lines 10)
+
+  # Disable saving the output to the Super-linter log file to avoid that output
+  # shows as interleaved with output from other jobs running in parallel.
+  # Post-processing logic after running GNU Parallel will print the logs
+  PARALLEL_COMMAND+=(CREATE_LOG_FILE="false")
 
   PARALLEL_COMMAND+=("BuildFileArrays")
   debug "PARALLEL_COMMAND to build the list of files and directories to lint: ${PARALLEL_COMMAND[*]}"
@@ -398,7 +412,7 @@ BuildFileArrays() {
         echo "${FILE}" >>"${FILE_ARRAYS_DIRECTORY_PATH}/file-array-JSCPD"
 
         debug "Add ${FILE} to the list of items to lint with pre-commit"
-        echo "${GITHUB_WORKSPACE}" >>"${FILE_ARRAYS_DIRECTORY_PATH}/file-array-PRE_COMMIT"
+        echo "${FILE}" >>"${FILE_ARRAYS_DIRECTORY_PATH}/file-array-PRE_COMMIT"
 
         debug "Add ${FILE} to the list of items to lint with Trivy"
         echo "${FILE}" >>"${FILE_ARRAYS_DIRECTORY_PATH}/file-array-TRIVY"

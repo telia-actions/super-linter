@@ -9,16 +9,15 @@ test: \
 	validate-container-image-labels \
 	docker-build-check \
 	docker-dev-container-build-check \
+	composer-audit \
 	npm-audit \
+	pip-audit \
 	test-lib \
 	inspec \
 	lint-codebase \
 	fix-codebase \
 	lint-subset-files \
 	test-non-default-home-directory \
-	test-log-level \
-	test-use-find-and-ignore-gitignored-files \
-	test-linters-expect-failure-log-level-notice \
 	test-save-super-linter-output \
 	test-save-super-linter-output-custom-path \
 	test-save-super-linter-custom-summary \
@@ -33,13 +32,20 @@ test: \
 	test-github-event-repository-dispatch \
 	test-github-event-pr-event-multiple-commits \
 	test-github-event-push-event-multiple-commits-default-branch \
+	test-github-event-push-event-multiple-commits-use-find-algorithm-and-ignore-gitignored-files-default-branch \
 	test-github-event-push-event-multiple-commits-use-find-algorithm-default-branch \
 	test-github-event-push-initial-commit-multiple-commits \
 	test-github-event-push-force-push \
 	test-github-event-push-force-push-multiple-commits \
 	test-runtime-dependencies-installation \
 	test-linters-expect-failure \
+	test-linters-expect-failure-log-level-notice \
+	test-linters-expect-failure-suppress-output-on-success \
+	test-linters-expect-failure-suppress-output-on-success-log-level-notice \
 	test-linters-expect-success \
+	test-linters-expect-success-log-level-notice \
+	test-linters-expect-success-suppress-output-on-success \
+	test-linters-expect-success-suppress-output-on-success-log-level-notice \
 	test-linters-fix-mode
 
 # if this session isn't interactive, then we don't want to allocate a
@@ -121,7 +127,6 @@ info: ## Gather information about the runtime environment
 	echo "Build version: ${BUILD_VERSION}"; \
 	echo "SUPER_LINTER_TEST_CONTAINER_URL: $(SUPER_LINTER_TEST_CONTAINER_URL)"; \
 	echo "ls -ahl:\n$$(ls -ahl)"; \
-	echo "Git log:\n$$(git log --all --graph --abbrev-commit --decorate --format=oneline)" \
 	docker images; \
 	docker ps; \
 	echo "Container image layers size:"; \
@@ -210,6 +215,17 @@ validate-container-image-labels: ## Validate container image labels
 		$(BUILD_REVISION) \
 		$(BUILD_VERSION)
 
+.PHONY: composer-audit
+composer-audit: ## Run composer audit to check for known vulnerable dependencies
+	docker run $(DOCKER_FLAGS) \
+		--entrypoint /bin/bash \
+		--rm \
+		-v "$(CURDIR)/dependencies/composer/composer.json":/php-composer/composer.json \
+		-v "$(CURDIR)/dependencies/composer/composer.lock":/php-composer/composer.lock \
+		--workdir /php-composer \
+		$(SUPER_LINTER_TEST_CONTAINER_URL) \
+		-c "composer audit"
+
 .PHONY: npm-audit
 npm-audit: ## Run npm audit to check for known vulnerable dependencies
 	docker run $(DOCKER_FLAGS) \
@@ -221,55 +237,29 @@ npm-audit: ## Run npm audit to check for known vulnerable dependencies
 		$(SUPER_LINTER_TEST_CONTAINER_URL) \
 		-c "npm audit"
 
+.PHONY: pip-audit
+pip-audit:  ## Run pip-audit to check for known vulnerable dependencies
+	docker run $(DOCKER_FLAGS) \
+		--entrypoint /run-pip-audit.sh \
+		--rm \
+		-v "$(CURDIR)/scripts/run-pip-audit.sh":/run-pip-audit.sh \
+		--workdir / \
+		$(SUPER_LINTER_TEST_CONTAINER_URL)
+
 .PHONY: lint-codebase
 lint-codebase: ## Lint the entire codebase
-	docker run $(DOCKER_FLAGS) \
-		-e CREATE_LOG_FILE=true \
-		-e RUN_LOCAL=true \
-		-e LOG_LEVEL=DEBUG \
-		-e DEFAULT_BRANCH=main \
-		-e ENABLE_GITHUB_ACTIONS_GROUP_TITLE=true \
-		-e FILTER_REGEX_EXCLUDE=".*(/test/linters/|CHANGELOG.md|/test/data/test-repository-contents/).*" \
-		-e GITLEAKS_CONFIG_FILE=".gitleaks-ignore-tests.toml" \
-		-e RENOVATE_SHAREABLE_CONFIG_PRESET_FILE_NAMES="default.json,hoge.json" \
-		-e SAVE_SUPER_LINTER_OUTPUT=true \
-		-e SAVE_SUPER_LINTER_SUMMARY=true \
-		-e VALIDATE_ALL_CODEBASE=true \
-		-v "$(CURDIR):/tmp/lint" \
-		--rm \
-		$(SUPER_LINTER_TEST_CONTAINER_URL)
+	$(CURDIR)/test/run-super-linter-tests.sh \
+		$(SUPER_LINTER_TEST_CONTAINER_URL) \
+		"lint_codebase" \
+		"$(IMAGE)"
 
 # Return an error if there are changes to commit
 .PHONY: fix-codebase
 fix-codebase: ## Fix and format the entire codebase
-	docker run $(DOCKER_FLAGS) \
-		-e CREATE_LOG_FILE=true \
-		-e DEFAULT_BRANCH=main \
-		-e ENABLE_GITHUB_ACTIONS_GROUP_TITLE=true \
-		-e FILTER_REGEX_EXCLUDE=".*(/test/linters/|CHANGELOG.md|/test/data/test-repository-contents/).*" \
-		-e FIX_GITHUB_ACTIONS_ZIZMOR=true \
-		-e FIX_ENV=true \
-		-e FIX_JAVASCRIPT_ES=true \
-		-e FIX_JAVASCRIPT_PRETTIER=true \
-		-e FIX_JSON=true \
-		-e FIX_JSON_PRETTIER=true \
-		-e FIX_MARKDOWN=true \
-		-e FIX_MARKDOWN_PRETTIER=true \
-		-e FIX_NATURAL_LANGUAGE=true \
-		-e FIX_RUBY=true \
-		-e FIX_SHELL_SHFMT=true \
-		-e FIX_YAML_PRETTIER=true \
-		-e GITLEAKS_CONFIG_FILE=".gitleaks-ignore-tests.toml" \
-		-e LOG_LEVEL=DEBUG \
-		-e RUN_LOCAL=true \
-		-e SAVE_SUPER_LINTER_OUTPUT=true \
-		-e SAVE_SUPER_LINTER_SUMMARY=true \
-		-e VALIDATE_ALL_CODEBASE=true \
-		-v "$(CURDIR):/tmp/lint" \
-		--rm \
+	$(CURDIR)/test/run-super-linter-tests.sh \
 		$(SUPER_LINTER_TEST_CONTAINER_URL) \
-	&& /bin/bash -c "source test/testUtils.sh; if ! CheckUnexpectedGitChanges ${CURDIR}; then exit 1; fi"
-
+		"fix_codebase" \
+		"$(IMAGE)"
 
 # This is a smoke test to check how much time it takes to lint only a small
 # subset of files, compared to linting the whole codebase.
@@ -493,11 +483,40 @@ test-linters-expect-failure: ## Run the linters test suite expecting failures
 		"run_test_cases_expect_failure" \
 		"$(IMAGE)"
 
-.PHONY: test-log-level
-test-log-level: ## Run a test to check if there are conflicts with the LOG_LEVEL variable
+# Useful to check if any tool is using the LOG_LEVEL variable, besides Super-linter
+.PHONY: test-linters-expect-success-log-level-notice
+test-linters-expect-success-log-level-notice: ## Run the linters test suite expecting success with a LOG_LEVEL set to NOTICE
 	$(CURDIR)/test/run-super-linter-tests.sh \
 		$(SUPER_LINTER_TEST_CONTAINER_URL) \
-		"run_test_cases_log_level" \
+		"run_test_cases_expect_success_notice_log" \
+		"$(IMAGE)"
+
+.PHONY: test-linters-expect-success-suppress-output-on-success
+test-linters-expect-success-suppress-output-on-success: ## Run the linters test suite expecting successes but suppressing output
+	$(CURDIR)/test/run-super-linter-tests.sh \
+		$(SUPER_LINTER_TEST_CONTAINER_URL) \
+		"run_test_cases_expect_success_suppress_output_on_success" \
+		"$(IMAGE)"
+
+.PHONY: test-linters-expect-failure-suppress-output-on-success-log-level-notice
+test-linters-expect-failure-suppress-output-on-success-log-level-notice: ## Run the linters test suite expecting failures but suppressing output, with a LOG_LEVEL set to NOTICE
+	$(CURDIR)/test/run-super-linter-tests.sh \
+		$(SUPER_LINTER_TEST_CONTAINER_URL) \
+		"run_test_cases_expect_failure_suppress_output_on_success_notice_log" \
+		"$(IMAGE)"
+
+.PHONY: test-linters-expect-success-suppress-output-on-success-log-level-notice
+test-linters-expect-success-suppress-output-on-success-log-level-notice: ## Run the linters test suite expecting successes but suppressing output, with a LOG_LEVEL set to NOTICE
+	$(CURDIR)/test/run-super-linter-tests.sh \
+		$(SUPER_LINTER_TEST_CONTAINER_URL) \
+		"run_test_cases_expect_success_suppress_output_on_success_notice_log" \
+		"$(IMAGE)"
+
+.PHONY: test-linters-expect-failure-suppress-output-on-success
+test-linters-expect-failure-suppress-output-on-success: ## Run the linters test suite expecting falires but suppressing output
+	$(CURDIR)/test/run-super-linter-tests.sh \
+		$(SUPER_LINTER_TEST_CONTAINER_URL) \
+		"run_test_cases_expect_failure_suppress_output_on_success" \
 		"$(IMAGE)"
 
 .PHONY: test-linters-expect-failure-log-level-notice
@@ -584,11 +603,11 @@ test-github-event-repository-dispatch: ## Run super-linter against a repository 
 		"run_test_case_github_repository_dispatch" \
 		"$(IMAGE)"
 
-.PHONY: test-use-find-and-ignore-gitignored-files
-test-use-find-and-ignore-gitignored-files: ## Run super-linter with USE_FIND_ALGORITHM=true and IGNORE_GITIGNORED_FILES=true
+.PHONY: test-github-event-push-event-multiple-commits-use-find-algorithm-and-ignore-gitignored-files-default-branch
+test-github-event-push-event-multiple-commits-use-find-algorithm-and-ignore-gitignored-files-default-branch: ## Run super-linter with USE_FIND_ALGORITHM=true and IGNORE_GITIGNORED_FILES=true on a push event
 	$(CURDIR)/test/run-super-linter-tests.sh \
 		$(SUPER_LINTER_TEST_CONTAINER_URL) \
-		"run_test_case_use_find_and_ignore_gitignored_files" \
+		"run_test_case_github_push_event_multiple_commits_use_find_and_ignore_gitignored_files" \
 		"$(IMAGE)"
 
 .PHONY: test-save-super-linter-output

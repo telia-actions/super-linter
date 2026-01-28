@@ -10,8 +10,8 @@
 FROM alpine/terragrunt:1.14.1 AS terragrunt
 FROM dotenvlinter/dotenv-linter:4.0.0 AS dotenv-linter
 FROM ghcr.io/terraform-linters/tflint:v0.60.0 AS tflint
-FROM alpine/helm:4.0.5 AS helm
-FROM golang:1.25.5-alpine AS golang
+FROM alpine/helm:4.1.0 AS helm
+FROM golang:1.25.6-alpine AS golang
 FROM golangci/golangci-lint:v2.8.0 AS golangci-lint
 FROM goreleaser/goreleaser:v2.13.3 AS goreleaser
 FROM hadolint/hadolint:v2.14.0-alpine AS dockerfile-lint
@@ -21,13 +21,13 @@ FROM koalaman/shellcheck:v0.11.0 AS shellcheck
 FROM mstruebing/editorconfig-checker:v3.6.0 AS editorconfig-checker
 FROM mvdan/shfmt:v3.12.0 AS shfmt
 FROM rhysd/actionlint:1.7.10 AS actionlint
-FROM scalameta/scalafmt:v3.10.2 AS scalafmt
+FROM scalameta/scalafmt:v3.10.4 AS scalafmt
 FROM zricethezav/gitleaks:v8.30.0 AS gitleaks
 FROM yoheimuta/protolint:0.56.4 AS protolint
-FROM ghcr.io/clj-kondo/clj-kondo:2026.01.12-alpine AS clj-kondo
+FROM ghcr.io/clj-kondo/clj-kondo:2026.01.19-alpine AS clj-kondo
 FROM dart:3.10.7-sdk AS dart
 FROM mcr.microsoft.com/dotnet/sdk:10.0.102-alpine3.23 AS dotnet-sdk
-FROM composer/composer:2.9.3 AS php-composer
+FROM composer/composer:2.9.4 AS php-composer
 FROM ghcr.io/aquasecurity/trivy:0.68.2 AS trivy
 FROM ghcr.io/yannh/kubeconform:v0.7.0 AS kubeconform
 
@@ -126,8 +126,7 @@ FROM php-composer AS php-linters
 
 COPY dependencies/composer/composer.json dependencies/composer/composer.lock /app/
 
-RUN composer update \
-  && composer audit
+RUN composer update
 
 FROM python-base AS ruby-installer
 
@@ -499,15 +498,6 @@ RUN git config --system --add safe.directory "*"
 # Disable Dart telemetry
 # hadolint ignore=DL3059
 RUN dart --disable-analytics
-
-# Patch npm-groovy-lint to allow running CodeNarc on Java 21, so that we don't
-# need to include both Java JRE 17 and 21
-COPY patches/npm-groovy-lint-java-21.patch /patches/
-RUN apk add --no-cache --virtual .apply-patches \
-  patch \
-  && patch -p1 < /patches/npm-groovy-lint-java-21.patch \
-  && rm -rfv /patches \
-  && apk del --no-network --purge .apply-patches
 
 FROM base_image AS slim
 
