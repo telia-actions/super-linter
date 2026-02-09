@@ -159,7 +159,7 @@ To run super-linter as a GitHub Action, you do the following:
          # contents permission to clone the repository
          contents: read
          packages: read
-         # To issues and pull-requests permissions to write results as pull
+         # issues and pull-requests permissions to write results as pull
          # request comments. Omit them if you don't need summary comments
          issues: write
          pull-requests: write
@@ -177,7 +177,7 @@ To run super-linter as a GitHub Action, you do the following:
              persist-credentials: false
 
          - name: Super-linter
-           uses: super-linter/super-linter@v8.3.2 # x-release-please-version
+           uses: super-linter/super-linter@v8.5.0 # x-release-please-version
            env:
              # To report GitHub Actions status checks
              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -619,7 +619,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Super-Linter
-        uses: super-linter/super-linter@v8.3.2 # x-release-please-version
+        uses: super-linter/super-linter@v8.5.0 # x-release-please-version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Set your fix mode variables to true
