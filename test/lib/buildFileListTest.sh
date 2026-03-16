@@ -132,6 +132,7 @@ GenerateFileDiffTest() {
   fi
 
   for ((i = 0; i < EXPECTED_RAW_FILE_ARRAY_SIZE; i++)); do
+    EXPECTED_RAW_FILE_ARRAY+=("${GITHUB_WORKSPACE}/$((i + EXPECTED_RAW_FILE_ARRAY_SCAN_INDEX_START))-${SUBSHELL_TEST_FILE_NAME}")
     EXPECTED_RAW_FILE_ARRAY+=("${GITHUB_WORKSPACE}/test$((i + EXPECTED_RAW_FILE_ARRAY_SCAN_INDEX_START)).json")
   done
 
@@ -143,7 +144,13 @@ GenerateFileDiffTest() {
     )
   fi
 
-  if ! AssertArraysElementsContentMatch "RAW_FILE_ARRAY" "EXPECTED_RAW_FILE_ARRAY"; then
+  # Sort the arrays because we don't care about the order of elements
+  # shellcheck disable=SC2034
+  mapfile -t SORTED_RAW_FILE_ARRAY < <(printf "%s\n" "${RAW_FILE_ARRAY[@]}" | sort)
+  # shellcheck disable=SC2034
+  mapfile -t SORTED_EXPECTED_RAW_FILE_ARRAY < <(printf "%s\n" "${RAW_FILE_ARRAY[@]}" | sort)
+
+  if ! AssertArraysElementsContentMatch "SORTED_RAW_FILE_ARRAY" "SORTED_EXPECTED_RAW_FILE_ARRAY"; then
     fatal "${FUNCTION_NAME} test failed"
   fi
 
@@ -318,12 +325,18 @@ BuildFileListValidateAllCodeBaseTest() {
   initialize_git_repository "${GITHUB_WORKSPACE}"
 
   local -a TEST_FILES
-  # Keep this alphabetically sorted
+
+  # shellcheck disable=SC2016 # purposely add a file name that has a subshell in the name
   TEST_FILES=(
     "parentheses and spaces in the name (test).json"
     "spaces in the name.json"
     "test-file.json"
+    'prefix-$(touch file-${BUILD_VERSION})'
   )
+
+  # Sort the arrays because we don't care about the order of elements
+  # shellcheck disable=SC2034
+  mapfile -t TEST_FILES < <(printf "%s\n" "${TEST_FILES[@]}" | sort)
 
   local -a EXPECTED_RAW_FILE_ARRAY
   EXPECTED_RAW_FILE_ARRAY=()
@@ -423,6 +436,10 @@ CheckFileTypeTest() {
   echo "#!/usr/bin/env python3" >"${PYTHON_SCRIPT_PATH}"
   chmod +x "${PYTHON_SCRIPT_PATH}"
 
+  local ZSH_SCRIPT_PATH="${GITHUB_WORKSPACE}/zsh-script"
+  echo "#!/usr/bin/env zsh" >"${ZSH_SCRIPT_PATH}"
+  chmod +x "${ZSH_SCRIPT_PATH}"
+
   local PERL_SCRIPT_PATH="${GITHUB_WORKSPACE}/perl-script"
   echo "#!/usr/bin/env perl" >"${PERL_SCRIPT_PATH}"
   chmod +x "${PERL_SCRIPT_PATH}"
@@ -468,6 +485,7 @@ CheckFileTypeTest() {
 
   local -a ALL_SCRIPTS=(
     "${PYTHON_SCRIPT_PATH}"
+    "${ZSH_SCRIPT_PATH}"
     "${PERL_SCRIPT_PATH}"
     "${RUBY_SCRIPT_PATH}"
     "${POSIX_SHELL_SCRIPT_PATH}"
@@ -506,38 +524,33 @@ CheckFileTypeTest() {
   # Assertions for Ruby script
   AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-RUBY" "${RUBY_SCRIPT_PATH}"
 
-  # Assertions for all Shell scripts (direct and env variants)
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${POSIX_SHELL_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${POSIX_SHELL_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${POSIX_SHELL_SCRIPT_PATH}"
+  local -a SHELL_LANGUAGES
+  SHELL_LANGUAGES=(
+    BASH
+    BASH_EXEC
+    SHELL_SHFMT
+  )
 
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${BASH_SHELL_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${BASH_SHELL_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${BASH_SHELL_SCRIPT_PATH}"
+  for shell_language in "${SHELL_LANGUAGES[@]}"; do
+    debug "Verifying assertions for ${shell_language}"
 
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${DASH_SHELL_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${DASH_SHELL_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${DASH_SHELL_SCRIPT_PATH}"
+    # Assertions for ZSH shell scripts
 
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${KSH_SHELL_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${KSH_SHELL_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${KSH_SHELL_SCRIPT_PATH}"
+    if AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-${shell_language}" "${ZSH_SCRIPT_PATH}"; then
+      fatal "${ZSH_SCRIPT_PATH} should NOT be in file-array-${shell_language}"
+    fi
 
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${ENV_SH_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${ENV_SH_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${ENV_SH_SCRIPT_PATH}"
+    # Assertions for all Shell scripts (direct and env variants)
 
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${ENV_BASH_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${ENV_BASH_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${ENV_BASH_SCRIPT_PATH}"
-
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${ENV_DASH_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${ENV_DASH_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${ENV_DASH_SCRIPT_PATH}"
-
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH" "${ENV_KSH_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-BASH_EXEC" "${ENV_KSH_SCRIPT_PATH}"
-  AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-SHELL_SHFMT" "${ENV_KSH_SCRIPT_PATH}"
+    AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-${shell_language}" "${POSIX_SHELL_SCRIPT_PATH}"
+    AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-${shell_language}" "${BASH_SHELL_SCRIPT_PATH}"
+    AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-${shell_language}" "${DASH_SHELL_SCRIPT_PATH}"
+    AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-${shell_language}" "${KSH_SHELL_SCRIPT_PATH}"
+    AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-${shell_language}" "${ENV_SH_SCRIPT_PATH}"
+    AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-${shell_language}" "${ENV_BASH_SCRIPT_PATH}"
+    AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-${shell_language}" "${ENV_DASH_SCRIPT_PATH}"
+    AssertFileContains "${FILE_ARRAYS_DIRECTORY_PATH}/file-array-${shell_language}" "${ENV_KSH_SCRIPT_PATH}"
+  done
 
   unset SUPPRESS_FILE_TYPE_WARN
   notice "${FUNCTION_NAME} PASS"
