@@ -169,7 +169,7 @@ To run super-linter as a GitHub Action, you do the following:
 
        steps:
          - name: Checkout code
-           uses: actions/checkout@v5
+           uses: actions/checkout@v6
            with:
              # super-linter needs the full git history to get the
              # list of files that changed across commits
@@ -177,7 +177,7 @@ To run super-linter as a GitHub Action, you do the following:
              persist-credentials: false
 
          - name: Super-linter
-           uses: super-linter/super-linter@v8.5.0 # x-release-please-version
+           uses: super-linter/super-linter@v8.6.0 # x-release-please-version
            env:
              # To report GitHub Actions status checks
              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -227,7 +227,7 @@ You can configure Super-linter using the following environment variables:
 | ------------------------------------------------------ | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **ANSIBLE_CONFIG_FILE**                                | `.ansible-lint.yml`                                                          | Filename for [Ansible-lint configuration](https://ansible.readthedocs.io/projects/lint/configuring/) (ex: `.ansible-lint`, `.ansible-lint.yml`)                                                                                                                                                                                                                             |
 | **ANSIBLE_DIRECTORY**                                  | `/ansible`                                                                   | Flag to set the root directory for Ansible file location(s), relative to `DEFAULT_WORKSPACE`. Set to `.` to use the top-level of the `DEFAULT_WORKSPACE`.                                                                                                                                                                                                                   |
-| **BASH_EXEC_IGNORE_LIBRARIES**                         | `false`                                                                      | If set to `true`, shell files with a file extension and no shebang line are ignored when checking if the executable bit is set.                                                                                                                                                                                                                                             |
+| **BASH_EXEC_IGNORE_LIBRARIES**                         | `false`                                                                      | If set to `true`, shell files with no shebang line are ignored when checking if the executable bit is set.                                                                                                                                                                                                                                                                  |
 | **BASH_FILE_NAME**                                     | `.shellcheckrc`                                                              | Filename for [Shellcheck](https://github.com/koalaman/shellcheck/blob/master/shellcheck.1.md#rc-files)                                                                                                                                                                                                                                                                      |
 | **BASH_SEVERITY**                                      | Shellcheck default severity                                                  | Specify the minimum severity of errors to consider in shellcheck. Valid values in order of severity are error, warning, info and style.                                                                                                                                                                                                                                     |
 | **CHECKOV_FILE_NAME**                                  | `.checkov.yaml`                                                              | Configuration filename for Checkov.                                                                                                                                                                                                                                                                                                                                         |
@@ -614,12 +614,12 @@ jobs:
       statuses: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Super-Linter
-        uses: super-linter/super-linter@v8.5.0 # x-release-please-version
+        uses: super-linter/super-linter@v8.6.0 # x-release-please-version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Set your fix mode variables to true
@@ -663,7 +663,7 @@ To work around these limitations, you do the following:
 1. Use the authentication token in the `actions/checkout` step:
 
    ```yaml
-   - uses: actions/checkout@v5
+   - uses: actions/checkout@v6
      with:
        fetch-depth: 0
        token: ${{ secrets.SUPER_LINTER_TOKEN }}
