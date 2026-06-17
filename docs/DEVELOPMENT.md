@@ -48,11 +48,37 @@ the most important targets:
 
 - `make lint-codebase`: Runs a comprehensive set of linters against the entire
   codebase to check for style and formatting issues.
+- `make audit`: Runs all security audit targets (`composer-audit`, `npm-audit`,
+  `pip-audit`) to check for known vulnerabilities in downstream dependencies and
+  container filesystems. You can also execute each target in isolation (e.g.,
+  `make npm-audit`).
 - `make fix-codebase`: Automatically fixes linting and formatting issues.
-- `make test`: Runs the complete test suite. To run a specific subset of tests,
-  you can use `make help` to find the relevant targets.
+- `make format-codebase`: Runs all formatter targets (such as Prettier) to
+  format files in the repository.
+- `make format-prettier`: Runs Prettier to format the codebase. You can format
+  specific files or directories in isolation by passing the `FILES_TO_FORMAT`
+  variable:
+
+  ```bash
+  make format-prettier FILES_TO_FORMAT="test/linters/html/html_good_01.html"
+  ```
+
+- `make format-shfmt`: Runs `shfmt` to format shell scripts in the codebase. You
+  can format specific files or directories in isolation by passing the
+  `FILES_TO_FORMAT` variable:
+
+  ```bash
+  make format-shfmt FILES_TO_FORMAT="scripts/manage-vulnerability-issues.sh"
+  ```
+
+- `make test`: Runs the complete test suite. The full test suite runs complex
+  container actions and is resource-intensive. To run a specific subset of
+  tests, you can use `make help` to find the relevant targets.
 - `make open-shell-super-linter-container`: Opens an interactive shell in the
   Super-linter container.
+- `make run-command-super-linter-container CMD="your command"`: Runs a one-off
+  command inside the Super-linter container. Example:
+  `make run-command-super-linter-container CMD="ls -alh"`.
 
 The implementation of the Make targets of this project that use Docker to run
 tests in isolated environments assumes that you can

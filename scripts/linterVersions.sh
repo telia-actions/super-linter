@@ -231,7 +231,7 @@ for LANGUAGE in "${!LINTER_NAMES_ARRAY[@]}"; do
   elif [[ ${LINTER} == "terraform" ]]; then
     GET_VERSION_CMD="$("${LINTER}" version -json | jq --raw-output .terraform_version)"
   elif [[ "${LINTER}" == "terragrunt" ]]; then
-    GET_VERSION_CMD="$("${LINTER}" --version | awk '{ print $2 }')"
+    GET_VERSION_CMD="$("${LINTER}" --version | awk '{ print $3 }')"
   elif [[ ${LINTER} == "tflint" ]]; then
     # Unset TF_LOG_LEVEL so that the version file doesn't contain debug log when running
     # commands that read TF_LOG_LEVEL or TFLINT_LOG, which are likely set to DEBUG when
@@ -239,7 +239,7 @@ for LANGUAGE in "${!LINTER_NAMES_ARRAY[@]}"; do
     GET_VERSION_CMD="$(
       unset TF_LOG_LEVEL
       unset TFLINT_LOG
-      "${LINTER}" --version | grep 'version' | awk '{ print $3 }'
+      "${LINTER}" --version | awk '/^TFLint version/ { print $3 }'
     )"
   elif [[ ${LINTER} == "trivy" ]]; then
     GET_VERSION_CMD="$("${LINTER}" --version 2>&1 | awk '{ print $2 }')"
