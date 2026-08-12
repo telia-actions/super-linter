@@ -7,31 +7,31 @@
 #########################################
 # Get dependency images as build stages #
 #########################################
-FROM alpine/terragrunt:1.15.5 AS terragrunt
+FROM alpine/terragrunt:1.15.8 AS terragrunt
 FROM dotenvlinter/dotenv-linter:4.0.0 AS dotenv-linter
-FROM ghcr.io/terraform-linters/tflint:v0.63.1 AS tflint
-FROM alpine/helm:4.2.0 AS helm
-FROM golang:1.26.4-alpine AS golang
+FROM ghcr.io/terraform-linters/tflint:v0.64.0 AS tflint
+FROM alpine/helm:4.2.3 AS helm
+FROM golang:1.26.5-alpine AS golang
 FROM golangci/golangci-lint:v2.12.2 AS golangci-lint
-FROM goreleaser/goreleaser:v2.16.0 AS goreleaser
+FROM goreleaser/goreleaser:v2.17.0 AS goreleaser
 FROM hadolint/hadolint:v2.14.0-alpine AS dockerfile-lint
 FROM registry.k8s.io/kustomize/kustomize:v5.8.1 AS kustomize
-FROM hashicorp/terraform:1.15.5 AS terraform
+FROM hashicorp/terraform:1.15.8 AS terraform
 FROM koalaman/shellcheck:v0.11.0 AS shellcheck
-FROM mstruebing/editorconfig-checker:v3.7.0 AS editorconfig-checker
+FROM mstruebing/editorconfig-checker:v3.8.0 AS editorconfig-checker
 FROM mvdan/shfmt:v3.13.1 AS shfmt
 FROM rhysd/actionlint:1.7.12 AS actionlint
-FROM scalameta/scalafmt:v3.11.1 AS scalafmt
+FROM scalameta/scalafmt:v3.11.4 AS scalafmt
 FROM zricethezav/gitleaks:v8.30.1 AS gitleaks
 FROM yoheimuta/protolint:0.56.4 AS protolint
 FROM ghcr.io/clj-kondo/clj-kondo:2026.05.25-alpine AS clj-kondo
-FROM dart:3.12.1-sdk AS dart
-FROM mcr.microsoft.com/dotnet/sdk:10.0.300-alpine3.23 AS dotnet-sdk
-FROM composer/composer:2.10.1 AS php-composer
-FROM ghcr.io/aquasecurity/trivy:0.71.0 AS trivy
+FROM dart:3.12.2-sdk AS dart
+FROM mcr.microsoft.com/dotnet/sdk:10.0.302-alpine3.23 AS dotnet-sdk
+FROM composer/composer:2.10.2 AS php-composer
+FROM ghcr.io/aquasecurity/trivy:0.72.0 AS trivy
 FROM ghcr.io/yannh/kubeconform:v0.8.0 AS kubeconform
 
-FROM python:3.14.3-alpine3.23 AS python-base
+FROM python:3.14.6-alpine3.23 AS python-base
 
 FROM python-base AS clang-format
 
@@ -448,7 +448,6 @@ ENV PATH="${PATH}:/venvs/cpplint/bin"
 ENV PATH="${PATH}:/venvs/flake8/bin"
 ENV PATH="${PATH}:/venvs/isort/bin"
 ENV PATH="${PATH}:/venvs/mypy/bin"
-ENV PATH="${PATH}:/venvs/nbqa/bin"
 ENV PATH="${PATH}:/venvs/pre-commit/bin"
 ENV PATH="${PATH}:/venvs/pylint/bin"
 ENV PATH="${PATH}:/venvs/ruff/bin"

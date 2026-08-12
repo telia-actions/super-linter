@@ -2,6 +2,7 @@
 
 This document helps you upgrade from a super-linter version to newer ones:
 
+- [Upgrade from >=v8.4.0 to v9.0.0](#upgrade-from-v840-to-v900)
 - [Upgrade from >=v8.2.0 to v8.4.0](#upgrade-from-v820-to-v840)
 - [Upgrade from v8.1.0 to v8.2.0](#upgrade-from-v810-to-v820)
 - [Upgrade from v7.4.0 to v8.0.0](#upgrade-from-v740-to-v8)
@@ -9,6 +10,46 @@ This document helps you upgrade from a super-linter version to newer ones:
 - [Upgrade from v6 to v7](#upgrade-from-v6-to-v7)
 - [Upgrade from v6.7.0 to v6.8.0](#upgrade-from-v670-to-v680)
 - [Upgrade from v5 to v6](#upgrade-from-v5-to-v6)
+
+## Upgrade from >=v8.4.0 to v9.0.0
+
+This section helps you upgrade from Super-linter `>=v8.4.0` to `v9.0.0`.
+
+### NBQA
+
+Super-linter `v9.0.0` removes support for NBQA because it's not being maintained
+anymore.
+
+You can remove the following variables from your Super-linter configuration:
+
+- `FIX_JUPYTER_NBQA_BLACK`
+- `FIX_JUPYTER_NBQA_ISORT`
+- `FIX_JUPYTER_NBQA_RUFF`
+- `JUPYTER_NBQA_BLACK_CONFIG_FILE`
+- `JUPYTER_NBQA_FLAKE8_CONFIG_FILE`
+- `JUPYTER_NBQA_ISORT_CONFIG_FILE`
+- `JUPYTER_NBQA_MYPY_CONFIG_FILE`
+- `JUPYTER_NBQA_PYLINT_CONFIG_FILE`
+- `JUPYTER_NBQA_RUFF_CONFIG_FILE`
+- `VALIDATE_JUPYTER_NBQA_BLACK`
+- `VALIDATE_JUPYTER_NBQA_FLAKE8`
+- `VALIDATE_JUPYTER_NBQA_ISORT`
+- `VALIDATE_JUPYTER_NBQA_MYPY`
+- `VALIDATE_JUPYTER_NBQA_PYLINT`
+- `VALIDATE_JUPYTER_NBQA_RUFF`
+
+### Jscpd and .gitignore
+
+Super-linter doesn't add the `--no-gitignore` or the `--gitignore` options
+according to the value of `IGNORE_GITIGNORED_FILES`. For more information, see
+the
+[Jscpd documentation](https://github.com/kucherenko/jscpd/blob/master/docs/rust.md#config-file).
+
+### Stylelint configuration file
+
+Change the stylelint configuration filename to `stylelint.config.mjs` and format
+from JSON to ES Module, as recommended by the
+[Stylelint documentation](https://stylelint.io/user-guide/configure).
 
 ## Upgrade from >=v8.2.0 to v8.4.0
 
@@ -22,7 +63,7 @@ updates.
 
 ### Terrascan
 
-Super-linter `v8.4.0` removes support for theTerrascan because it's not being
+Super-linter `v8.4.0` removes support for Terrascan because it's not being
 maintained anymore.
 
 You can remove the following variables from your Super-linter configuration:
