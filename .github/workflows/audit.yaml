@@ -1,17 +1,17 @@
 name: Dependency Audits
 
 on:
-  workflow_call:
-  schedule:
+  # workflow_call:
+  # schedule:
     # Fire every Monday at 04:00 UTC
-    - cron: "0 4 * * 1"
+    # - cron: "0 4 * * 1"
   workflow_dispatch:
   # Trigger on pushes to any branch except main, because main pushes already trigger
   # the Publish Images workflow, which we monitor via the workflow_call event above.
-  push:
-    branches-ignore:
-      - main
-  pull_request:
+  # push:
+  #   branches-ignore:
+  #     - main
+  # pull_request:
 
 # Don't grant any access by default
 permissions: {}
